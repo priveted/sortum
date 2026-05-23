@@ -13,6 +13,8 @@ Lightweight, powerful drag-and-drop sorting library with touch support, smooth a
 [Documentation](https://sortum.priveted.com/#docs) /
 [Examples](https://sortum.priveted.com/#examples)
 
+---
+
 ## Installation
 
 ```bash

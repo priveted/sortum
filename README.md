@@ -3,13 +3,15 @@
 [![npm version](https://img.shields.io/npm/v/sortum.svg)](https://www.npmjs.com/package/sortum)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+Lightweight, powerful drag-and-drop sorting library with touch support, smooth animations, and cross-container functionality.
+
+---
+
 ## Website
 
 [Website](https://sortum.priveted.com) /
 [Documentation](https://sortum.priveted.com/#docs) /
 [Examples](https://sortum.priveted.com/#examples)
-
-Lightweight, powerful drag-and-drop sorting library with touch support, smooth animations, and cross-container functionality.
 
 ## Installation
 

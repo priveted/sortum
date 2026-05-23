@@ -1,0 +1,59 @@
+{
+  "name": "sortum",
+  "description": "Lightweight, powerful drag-and-drop sorting library with touch support, smooth animations, and cross-container functionality.",
+  "version": "1.0.0",
+  "license": "MIT",
+  "author": "Eduard Y",
+  "homepage": "https://sortum.priveted.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/priveted/sortum"
+  },
+  "type": "module",
+  "main": "./dist/sortum.mjs",
+  "module": "./dist/sortum.mjs",
+  "types": "./dist/sortum.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/sortum.d.ts",
+      "import": "./dist/sortum.mjs",
+      "require": "./dist/sortum.umd.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --fix",
+    "format": "prettier --write ."
+  },
+  "keywords": [
+    "dom",
+    "sort",
+    "sortum",
+    "sorting",
+    "elements",
+    "reorder",
+    "typescript"
+  ],
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.8.0",
+    "eslint": "^10.4.0",
+    "globals": "^17.6.0",
+    "prettier": "3.8.3",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.59.3",
+    "vite": "^8.0.12",
+    "vite-plugin-dts": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "snappykit": "^1.0.6"
+  }
+}

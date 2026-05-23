@@ -1,1 +1,1 @@
-export * from './sortum'
+export * from './sortum';

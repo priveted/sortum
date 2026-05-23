@@ -2,8 +2,12 @@
 
 [![npm version](https://img.shields.io/npm/v/sortum.svg)](https://www.npmjs.com/package/sortum)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[Website](https://sortum.priveted.com)
 
+## Website
+
+[Website](https://sortum.priveted.com) /
+[Documentation](https://sortum.priveted.com/#docs) /
+[Examples](https://sortum.priveted.com/#examples)
 
 Lightweight, powerful drag-and-drop sorting library with touch support, smooth animations, and cross-container functionality.
 
@@ -14,6 +18,7 @@ npm i sortum
 ```
 
 ## Quick Start
+
 ```html
 <div class="sortum">
   <div class="item">Item 1</div>
@@ -29,12 +34,9 @@ const sortum = new Sortum(document.querySelector('.sortum'), {
   duration: 300,
   onEnd: (data) => {
     console.log(`Moved from ${data.fromIndex} to ${data.toIndex}`);
-  }
+  },
 });
 ```
-## Links
-[Documentation](https://sortum.priveted.com/#docs) / 
-[Examples](https://sortum.priveted.com/#examples)
 
 ---
 

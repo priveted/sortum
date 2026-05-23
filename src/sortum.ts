@@ -10,25 +10,25 @@ import {
   removeAttr,
   queryList,
   closest,
-  rect
-} from 'snappykit'
+  rect,
+} from 'snappykit';
 import {
   Sortum as ISortum,
   SortumDragEvent,
   SortumDropEvent,
   SortumMoveEvent,
   SortumOptions,
-  SortumScrollAnimation
-} from "@/types";
+  SortumScrollAnimation,
+} from '@/types';
 
-export * from '@/types'
+export * from '@/types';
 
 export default class Sortum implements ISortum {
   /** The container element managed by this instance */
   private container: HTMLElement;
 
   /** Combined CSS selector for finding sortable items */
-  private fullItemsSelector: string = "";
+  private fullItemsSelector: string = '';
   /** The ghost element that follows the pointer during drag */
   private ghost: HTMLElement | null = null;
   /** The element currently being dragged */
@@ -129,8 +129,7 @@ export default class Sortum implements ISortum {
    */
   private getChildren(parent: HTMLElement | null): HTMLElement[] {
     if (!parent) return [];
-    return ([...parent.children] as HTMLElement[])
-      .filter(el => !el.matches(`.${this.ghostClass}`));
+    return ([...parent.children] as HTMLElement[]).filter((el) => !el.matches(`.${this.ghostClass}`));
   }
 
   /**
@@ -143,12 +142,9 @@ export default class Sortum implements ISortum {
   private hasSignificantMove(
     start: { clientX: number; clientY: number },
     current: { clientX: number; clientY: number },
-    distance: number
+    distance: number,
   ): boolean {
-    return Math.hypot(
-      current.clientX - start.clientX,
-      current.clientY - start.clientY
-    ) >= distance;
+    return Math.hypot(current.clientX - start.clientX, current.clientY - start.clientY) >= distance;
   }
 
   /**
@@ -162,12 +158,12 @@ export default class Sortum implements ISortum {
     this.ghost = this.grabbed.cloneNode(true) as HTMLElement;
 
     css(this.ghost, {
-      position: "fixed",
+      position: 'fixed',
       left: `${x}px`,
       top: `${y}px`,
       width: `${width}px`,
       height: `${height}px`,
-      pointerEvents: "none",
+      pointerEvents: 'none',
       zIndex: this.zIndex,
       opacity: this.opacity,
     });
@@ -178,7 +174,7 @@ export default class Sortum implements ISortum {
     this.ghost.animate([{ scale: `${this.scale}` }], {
       duration: 250,
       easing: this.easing,
-      fill: "forwards"
+      fill: 'forwards',
     });
 
     append(this.container, this.ghost);
@@ -212,36 +208,37 @@ export default class Sortum implements ISortum {
    * @param params.y - Target Y coordinate
    * @returns The Animation object, or undefined if no movement needed
    */
-  private animateItem(
-    { el, x, y }: {
-      el: HTMLElement;
-      x: number;
-      y: number
-    }
-  ): Animation | undefined {
+  private animateItem({ el, x, y }: { el: HTMLElement; x: number; y: number }): Animation | undefined {
     const { left, top } = rect(el);
 
     if (x === left && y === top) return;
 
     addClass(el, this.animatedClass);
 
-    const keyframes = el === this.grabbed
-      ? [
-        { position: "relative", zIndex: 1, translate: `${x - left}px ${y - top}px`, opacity: 0.9, scale: `${this.scale}` },
-        { position: "relative", zIndex: 1, translate: "0", opacity: 1, scale: "1" },
-      ]
-      : [
-        { position: "relative", zIndex: 0, scale: "1.0", translate: `${x - left}px ${y - top}px` },
-        { position: "relative", zIndex: 0, scale: `${2 - this.scale}` },
-        { position: "relative", zIndex: 0, scale: "1.0", translate: "0" },
-      ];
+    const keyframes =
+      el === this.grabbed
+        ? [
+            {
+              position: 'relative',
+              zIndex: 1,
+              translate: `${x - left}px ${y - top}px`,
+              opacity: 0.9,
+              scale: `${this.scale}`,
+            },
+            { position: 'relative', zIndex: 1, translate: '0', opacity: 1, scale: '1' },
+          ]
+        : [
+            { position: 'relative', zIndex: 0, scale: '1.0', translate: `${x - left}px ${y - top}px` },
+            { position: 'relative', zIndex: 0, scale: `${2 - this.scale}` },
+            { position: 'relative', zIndex: 0, scale: '1.0', translate: '0' },
+          ];
     const anim = el.animate(keyframes as Keyframe[], {
       duration: this.duration,
       easing: this.easing,
-      fill: "forwards"
+      fill: 'forwards',
     });
 
-    anim.addEventListener("finish", () => {
+    anim.addEventListener('finish', () => {
       removeClass(el, this.animatedClass);
       anim.cancel();
     });
@@ -258,10 +255,10 @@ export default class Sortum implements ISortum {
    */
   private findDropTarget(
     clientX: number,
-    clientY: number
+    clientY: number,
   ): {
     target: HTMLElement | null;
-    dropContainer: HTMLElement | null
+    dropContainer: HTMLElement | null;
   } {
     if (!this.ghost) {
       const fromPoint = document.elementFromPoint(clientX, clientY) as HTMLElement;
@@ -289,7 +286,7 @@ export default class Sortum implements ISortum {
       const dropContainer = container as HTMLElement,
         children = this.getChildren(container as HTMLElement);
 
-      const validChildren = children.filter(child => child !== this.grabbed);
+      const validChildren = children.filter((child) => child !== this.grabbed);
 
       if (validChildren.length === 0) {
         return { target: dropContainer, dropContainer };
@@ -353,11 +350,11 @@ export default class Sortum implements ISortum {
   private isValidPosition({
     clientX = 0,
     clientY = 0,
-    el
+    el,
   }: {
     clientX?: number;
     clientY?: number;
-    el?: HTMLElement
+    el?: HTMLElement;
   } = {}): boolean {
     if (el) {
       if (el.closest(`${this.ignoredSelector}`)) return false;
@@ -436,8 +433,10 @@ export default class Sortum implements ISortum {
   private findScrollParent(el: Element | null | undefined): Element {
     while (el && el !== document.documentElement) {
       const style = getComputedStyle(el);
-      if ((el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth) &&
-        /^(auto|scroll)$/.test(style.overflowY)) {
+      if (
+        (el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth) &&
+        /^(auto|scroll)$/.test(style.overflowY)
+      ) {
         return el;
       }
       el = el.parentElement;
@@ -451,13 +450,13 @@ export default class Sortum implements ISortum {
   private scrollTick(): void {
     if (!this.scrollDirection || !this.scrollContainer) return;
     const speed = this.scrollSpeed * (this.edgePressure / Math.max(this.edgeThreshold, 1));
-    if (this.scrollDirection === "up") {
+    if (this.scrollDirection === 'up') {
       this.scrollContainer.scrollTop -= speed;
-    } else if (this.scrollDirection === "down") {
+    } else if (this.scrollDirection === 'down') {
       this.scrollContainer.scrollTop += speed;
-    } else if (this.scrollDirection === "left") {
+    } else if (this.scrollDirection === 'left') {
       this.scrollContainer.scrollLeft -= speed;
-    } else if (this.scrollDirection === "right") {
+    } else if (this.scrollDirection === 'right') {
       this.scrollContainer.scrollLeft += speed;
     }
   }
@@ -507,16 +506,16 @@ export default class Sortum implements ISortum {
 
     if (ev.clientY < topEdge + this.edgeThreshold) {
       this.edgePressure = Math.min(this.edgeThreshold, this.edgeThreshold - (ev.clientY - topEdge));
-      this.startAutoScroll("up");
+      this.startAutoScroll('up');
     } else if (ev.clientY > bottomEdge - this.edgeThreshold) {
       this.edgePressure = Math.min(this.edgeThreshold, this.edgeThreshold - (bottomEdge - ev.clientY));
-      this.startAutoScroll("down");
+      this.startAutoScroll('down');
     } else if (ev.clientX < leftEdge + this.edgeThreshold) {
       this.edgePressure = Math.min(this.edgeThreshold, this.edgeThreshold - (ev.clientX - leftEdge));
-      this.startAutoScroll("left");
+      this.startAutoScroll('left');
     } else if (ev.clientX > rightEdge - this.edgeThreshold) {
       this.edgePressure = Math.min(this.edgeThreshold, this.edgeThreshold - (rightEdge - ev.clientX));
-      this.startAutoScroll("right");
+      this.startAutoScroll('right');
     } else {
       this.stopAutoScroll();
     }
@@ -533,7 +532,7 @@ export default class Sortum implements ISortum {
     const source = grabElement.closest(this.containerSelector) as HTMLElement;
     const sourceChildren = this.getChildren(source);
     this.fromIndex = sourceChildren.indexOf(grabElement);
-    const sourceSiblings = sourceChildren.filter(el => el !== grabElement);
+    const sourceSiblings = sourceChildren.filter((el) => el !== grabElement);
 
     this.dropped = targetElement?.closest(`${this.fullItemsSelector}, ${this.containerSelector}`) as HTMLElement;
     const isOntoContainer = this.dropped?.matches(this.containerSelector);
@@ -559,7 +558,7 @@ export default class Sortum implements ISortum {
 
     if (!this.ghost) return false;
 
-    this.ghost?.animate([{ scale: 1.0 }], { duration: 0, fill: "forwards" });
+    this.ghost?.animate([{ scale: 1.0 }], { duration: 0, fill: 'forwards' });
     const ghostRect = rect(this.ghost);
 
     this.affected = [];
@@ -575,23 +574,24 @@ export default class Sortum implements ISortum {
     }
 
     const isValid = this.isValidPosition({ el: targetElement });
-    const canDrop = this.onDrop?.({
-      item: this.grabbed!,
-      source,
-      target: this.dropped,
-      destination: this.destination,
-      fromIndex: this.fromIndex,
-      toIndex: this.toIndex,
-      isValid,
-      isSameContainer,
-      event: this.currentEvent!,
-    }) ?? true;
+    const canDrop =
+      this.onDrop?.({
+        item: this.grabbed!,
+        source,
+        target: this.dropped,
+        destination: this.destination,
+        fromIndex: this.fromIndex,
+        toIndex: this.toIndex,
+        isValid,
+        isSameContainer,
+        event: this.currentEvent!,
+      }) ?? true;
 
     const notMoved = isSameContainer && this.fromIndex === this.toIndex;
     const shouldDrop = this.dropped && isValid && canDrop && !notMoved;
 
     if (shouldDrop) {
-      const itemsData = this.affected.map(el => {
+      const itemsData = this.affected.map((el) => {
         const { x, y } = rect(el);
         return { el, x, y };
       });
@@ -604,7 +604,10 @@ export default class Sortum implements ISortum {
         if (isOntoContainer) {
           append(this.destination!, grabElement);
         } else if (isSameContainer) {
-          this.destination?.insertBefore(grabElement, this.toIndex < this.fromIndex ? this.dropped : this.dropped!.nextSibling);
+          this.destination?.insertBefore(
+            grabElement,
+            this.toIndex < this.fromIndex ? this.dropped : this.dropped!.nextSibling,
+          );
         } else {
           if (this.toIndex > destChildren.indexOf(this.dropped!)) {
             this.destination?.insertBefore(grabElement, this.dropped!.nextSibling);
@@ -623,7 +626,7 @@ export default class Sortum implements ISortum {
       addClass(grabElement, this.dropAnimationClass);
       const anim = this.animateItem({ el: grabElement, x: ghostRect.left, y: ghostRect.top });
       if (anim) {
-        anim.addEventListener("finish", () => {
+        anim.addEventListener('finish', () => {
           removeClass(grabElement, this.dropAnimationClass);
           this.onAnimationEnd?.();
         });
@@ -649,10 +652,10 @@ export default class Sortum implements ISortum {
 
     if (!item || item.parentElement !== this.container) return;
 
-    const isIgnored = target !== item && (
-      (this.noDropSelector && target.closest(this.noDropSelector)) ||
-      (this.noDragSelector && target.closest(this.noDragSelector))
-    );
+    const isIgnored =
+      target !== item &&
+      ((this.noDropSelector && target.closest(this.noDropSelector)) ||
+        (this.noDragSelector && target.closest(this.noDragSelector)));
 
     if (isIgnored) return;
 
@@ -665,21 +668,23 @@ export default class Sortum implements ISortum {
     this.grabbed = item;
     this.fromIndex = this.getChildren(this.container).indexOf(this.grabbed);
 
-    if (this.onStart?.({
-      item: this.grabbed,
-      container: this.container,
-      index: this.fromIndex,
-      event: ev
-    }) === false) {
+    if (
+      this.onStart?.({
+        item: this.grabbed,
+        container: this.container,
+        index: this.fromIndex,
+        event: ev,
+      }) === false
+    ) {
       this.reset();
       return;
     }
 
     ev.preventDefault();
     addClass(this.grabbed, this.activeClass);
-    css(this.grabbed, { cursor: "move", userSelect: "none" });
+    css(this.grabbed, { cursor: 'move', userSelect: 'none' });
 
-    if (ev.pointerType === "mouse") {
+    if (ev.pointerType === 'mouse') {
       this.isScrolling = true;
     }
 
@@ -687,7 +692,7 @@ export default class Sortum implements ISortum {
       item: this.grabbed,
       container: this.container,
       index: this.fromIndex,
-      event: ev
+      event: ev,
     });
   }
 
@@ -721,7 +726,7 @@ export default class Sortum implements ISortum {
       }
     }
 
-    css(this.grabbed, { cursor: isValid ? "grab" : "not-allowed" });
+    css(this.grabbed, { cursor: isValid ? 'grab' : 'not-allowed' });
 
     if (target !== this.target) {
       if (this.target) removeClass(this.target, this.targetClass);
@@ -740,7 +745,7 @@ export default class Sortum implements ISortum {
       ghost: this.ghost,
       target: this.target,
       isValid,
-      event: ev
+      event: ev,
     });
   }
 
@@ -752,7 +757,7 @@ export default class Sortum implements ISortum {
     if (!this.grabbed) return;
     this.stopAutoScroll();
     this.isScrolling = false;
-    css(this.grabbed, { userSelect: "", cursor: "" });
+    css(this.grabbed, { userSelect: '', cursor: '' });
     removeClass(this.grabbed, [this.activeClass, this.draggingClass, this.touchClass]);
     if (this.target) removeClass(this.target, this.targetClass);
 
@@ -769,7 +774,7 @@ export default class Sortum implements ISortum {
         toIndex: this.toIndex,
         isValid: true,
         isSameContainer: this.container === this.destination,
-        event: ev
+        event: ev,
       });
     }
 
@@ -785,7 +790,7 @@ export default class Sortum implements ISortum {
     if (!this.grabbed || this.touchStart) return;
     this.touchStart = {
       clientX: ev.touches[0].clientX,
-      clientY: ev.touches[0].clientY
+      clientY: ev.touches[0].clientY,
     };
     if (this.pressTimer) clearTimeout(this.pressTimer);
     this.pressTimer = window.setTimeout(() => {
@@ -825,13 +830,13 @@ export default class Sortum implements ISortum {
   /** @see ISortum.sort */
   sort(fn: (a: HTMLElement, b: HTMLElement) => number): HTMLElement[] {
     const items = this.getChildren(this.container);
-    const itemsData = items.map(el => {
+    const itemsData = items.map((el) => {
       const { x, y } = rect(el);
       return { el, x, y };
     });
     const sorted = [...items].sort(fn);
-    sorted.forEach(item => append(this.container, item));
-    itemsData.forEach(data => this.animateItem(data));
+    sorted.forEach((item) => append(this.container, item));
+    itemsData.forEach((data) => this.animateItem(data));
     return sorted;
   }
 
@@ -861,46 +866,50 @@ export default class Sortum implements ISortum {
   refresh(options: SortumOptions = {}): void {
     this.destroy();
 
-    Object.assign(this, {
-      group: "",
-      swap: false,
-      duration: 420,
-      easing: "cubic-bezier(0.6, 0, 0.6, 1)",
-      scale: 1.0,
-      opacity: 0.8,
-      pressDuration: 15,
-      dropOnContainer: true,
-      dragThreshold: 0,
-      scrollThreshold: 8,
-      edgeThreshold: 50,
-      scrollSpeed: 10,
-      zIndex: 2147483647,
-      containerSelector: ".sortum",
-      itemsSelector: "*",
-      ignoredSelector: ".sortum-ignore",
-      handleSelector: "",
-      noDropSelector: "",
-      noDragSelector: `:is(input, select, textarea, button, label, [contenteditable=""], [contenteditable="true"], [tabindex]:not([tabindex^="-"]), a[href]:not(a[href]=""), area[href]):not(:disabled)`,
-      ghostClass: "is-sortum-ghost",
-      activeClass: "is-sortum-active",
-      touchClass: "is-sortum-touch",
-      draggingClass: "is-sortum-grab",
-      targetClass: "is-sortum-target",
-      animatedClass: "is-sortum-animated",
-      dropAnimationClass: "is-sortum-animated-drop",
-      invalidClass: "is-sortum-invalid",
-    }, options);
+    Object.assign(
+      this,
+      {
+        group: '',
+        swap: false,
+        duration: 420,
+        easing: 'cubic-bezier(0.6, 0, 0.6, 1)',
+        scale: 1.0,
+        opacity: 0.8,
+        pressDuration: 15,
+        dropOnContainer: true,
+        dragThreshold: 0,
+        scrollThreshold: 8,
+        edgeThreshold: 50,
+        scrollSpeed: 10,
+        zIndex: 2147483647,
+        containerSelector: '.sortum',
+        itemsSelector: '*',
+        ignoredSelector: '.sortum-ignore',
+        handleSelector: '',
+        noDropSelector: '',
+        noDragSelector: `:is(input, select, textarea, button, label, [contenteditable=""], [contenteditable="true"], [tabindex]:not([tabindex^="-"]), a[href]:not(a[href]=""), area[href]):not(:disabled)`,
+        ghostClass: 'is-sortum-ghost',
+        activeClass: 'is-sortum-active',
+        touchClass: 'is-sortum-touch',
+        draggingClass: 'is-sortum-grab',
+        targetClass: 'is-sortum-target',
+        animatedClass: 'is-sortum-animated',
+        dropAnimationClass: 'is-sortum-animated-drop',
+        invalidClass: 'is-sortum-invalid',
+      },
+      options,
+    );
 
     this.reset();
 
-    const containerClass = this.containerSelector.replace(/^\./, "");
-    if (this.containerSelector.startsWith(".") && !this.container.matches(this.containerSelector)) {
+    const containerClass = this.containerSelector.replace(/^\./, '');
+    if (this.containerSelector.startsWith('.') && !this.container.matches(this.containerSelector)) {
       addClass(this.container, containerClass);
       this.shouldRemoveContainerClass = true;
     }
 
-    this.itemsSelector = (this.itemsSelector ?? "*").replace(/^(?! *>)/, "> $&");
-    this.fullItemsSelector = `${this.containerSelector}${this.itemsSelector}${this.ignoredSelector ? `:not(${this.ignoredSelector})` : ""}`;
+    this.itemsSelector = (this.itemsSelector ?? '*').replace(/^(?! *>)/, '> $&');
+    this.fullItemsSelector = `${this.containerSelector}${this.itemsSelector}${this.ignoredSelector ? `:not(${this.ignoredSelector})` : ''}`;
 
     on(this.container, 'touchstart.sortum', (evt: TouchEvent) => this.onTouchStart(evt));
     on(this.container, 'touchmove.sortum', (evt: TouchEvent) => this.onTouchMove(evt));
@@ -924,6 +933,6 @@ export default class Sortum implements ISortum {
     off(this.container, 'pointerup.sortum');
     off(this.container, 'pointercancel.sortum');
     if (this.group) removeAttr(this.container, 'data-sortum-group');
-    if (this.shouldRemoveContainerClass) removeClass(this.container, this.containerSelector.replace(/^\./, ""));
+    if (this.shouldRemoveContainerClass) removeClass(this.container, this.containerSelector.replace(/^\./, ''));
   }
 }

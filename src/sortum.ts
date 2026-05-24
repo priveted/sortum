@@ -73,6 +73,7 @@ export default class Sortum implements ISortum {
   // Options
   private group!: string;
   private swap!: boolean;
+  private syncSizeOnOverlap!: boolean;
   private duration!: number;
   private easing!: string;
   private scale!: number;
@@ -198,7 +199,18 @@ export default class Sortum implements ISortum {
     if (!this.ghost || !this.startPosition) return;
     const dx = clientX - this.startPosition.clientX;
     const dy = clientY - this.startPosition.clientY;
-    this.ghost.style.translate = `${dx}px ${dy}px`;
+
+    // Adjust position to account for size changes
+    if (this.syncSizeOnOverlap && this.grabbed) {
+      const originalRect = rect(this.grabbed);
+      const ghostRect = rect(this.ghost);
+      const widthDiff = (ghostRect.width - originalRect.width) / 2;
+      const heightDiff = (ghostRect.height - originalRect.height) / 2;
+
+      this.ghost.style.translate = `${dx - widthDiff}px ${dy - heightDiff}px`;
+    } else {
+      this.ghost.style.translate = `${dx}px ${dy}px`;
+    }
   }
 
   /**
@@ -218,20 +230,20 @@ export default class Sortum implements ISortum {
     const keyframes =
       el === this.grabbed
         ? [
-            {
-              position: 'relative',
-              zIndex: 1,
-              translate: `${x - left}px ${y - top}px`,
-              opacity: 0.9,
-              scale: `${this.scale}`,
-            },
-            { position: 'relative', zIndex: 1, translate: '0', opacity: 1, scale: '1' },
-          ]
+          {
+            position: 'relative',
+            zIndex: 1,
+            translate: `${x - left}px ${y - top}px`,
+            opacity: 0.9,
+            scale: `${this.scale}`,
+          },
+          { position: 'relative', zIndex: 1, translate: '0', opacity: 1, scale: '1' },
+        ]
         : [
-            { position: 'relative', zIndex: 0, scale: '1.0', translate: `${x - left}px ${y - top}px` },
-            { position: 'relative', zIndex: 0, scale: `${2 - this.scale}` },
-            { position: 'relative', zIndex: 0, scale: '1.0', translate: '0' },
-          ];
+          { position: 'relative', zIndex: 0, scale: '1.0', translate: `${x - left}px ${y - top}px` },
+          { position: 'relative', zIndex: 0, scale: `${2 - this.scale}` },
+          { position: 'relative', zIndex: 0, scale: '1.0', translate: '0' },
+        ];
     const anim = el.animate(keyframes as Keyframe[], {
       duration: this.duration,
       easing: this.easing,
@@ -729,10 +741,19 @@ export default class Sortum implements ISortum {
     css(this.grabbed, { cursor: isValid ? 'grab' : 'not-allowed' });
 
     if (target !== this.target) {
-      if (this.target) removeClass(this.target, this.targetClass);
+      if (this.target) {
+        removeClass(this.target, this.targetClass);
+        // Reset ghost size when leaving a target
+        if (this.syncSizeOnOverlap && this.ghost && this.grabbed) {
+          const { width, height } = rect(this.grabbed);
+          css(this.ghost, { width: `${width}px`, height: `${height}px` });
+        }
+      }
       if (isValid && target && !target.matches(this.containerSelector)) {
         this.target = target;
         addClass(this.target, this.targetClass);
+        // Sync ghost size with new target
+        this.syncGhostSize(target);
       } else {
         this.target = null;
       }
@@ -827,6 +848,34 @@ export default class Sortum implements ISortum {
     }
   }
 
+  /**
+ * Syncs the ghost element's size with the target element's size.
+ * @param target - The target element to match sizes with
+ */
+  private syncGhostSize(target: HTMLElement): void {
+    if (!this.ghost || !this.syncSizeOnOverlap || !this.grabbed) return;
+
+    // Skip container targets
+    if (target.matches(this.containerSelector)) {
+      // Reset to original size
+      const { width, height } = rect(this.grabbed);
+
+      css(this.ghost, {
+        width: `${width}px`,
+        height: `${height}px`
+      });
+
+      return;
+    }
+
+    const targetRect = rect(target);
+
+    css(this.ghost, {
+      width: `${targetRect.width}px`,
+      height: `${targetRect.height}px`,
+    });
+  }
+
   /** @see ISortum.sort */
   sort(fn: (a: HTMLElement, b: HTMLElement) => number): HTMLElement[] {
     const items = this.getChildren(this.container);
@@ -871,6 +920,7 @@ export default class Sortum implements ISortum {
       {
         group: '',
         swap: false,
+        syncSizeOnOverlap: true,
         duration: 420,
         easing: 'cubic-bezier(0.6, 0, 0.6, 1)',
         scale: 1.0,

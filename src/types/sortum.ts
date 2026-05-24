@@ -62,6 +62,8 @@ export interface SortumOptions {
   group?: string;
   /** If true, dragged item swaps position with the target instead of inserting */
   swap?: boolean;
+  /** Whether to sync the ghost size with the target element on overlap. Default: true */
+  syncSizeOnOverlap?: boolean;
   /** Animation duration in milliseconds for item transitions */
   duration?: number;
   /** CSS easing function for animations */

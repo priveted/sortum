@@ -230,20 +230,20 @@ export default class Sortum implements ISortum {
     const keyframes =
       el === this.grabbed
         ? [
-          {
-            position: 'relative',
-            zIndex: 1,
-            translate: `${x - left}px ${y - top}px`,
-            opacity: 0.9,
-            scale: `${this.scale}`,
-          },
-          { position: 'relative', zIndex: 1, translate: '0', opacity: 1, scale: '1' },
-        ]
+            {
+              position: 'relative',
+              zIndex: 1,
+              translate: `${x - left}px ${y - top}px`,
+              opacity: 0.9,
+              scale: `${this.scale}`,
+            },
+            { position: 'relative', zIndex: 1, translate: '0', opacity: 1, scale: '1' },
+          ]
         : [
-          { position: 'relative', zIndex: 0, scale: '1.0', translate: `${x - left}px ${y - top}px` },
-          { position: 'relative', zIndex: 0, scale: `${2 - this.scale}` },
-          { position: 'relative', zIndex: 0, scale: '1.0', translate: '0' },
-        ];
+            { position: 'relative', zIndex: 0, scale: '1.0', translate: `${x - left}px ${y - top}px` },
+            { position: 'relative', zIndex: 0, scale: `${2 - this.scale}` },
+            { position: 'relative', zIndex: 0, scale: '1.0', translate: '0' },
+          ];
     const anim = el.animate(keyframes as Keyframe[], {
       duration: this.duration,
       easing: this.easing,
@@ -849,9 +849,9 @@ export default class Sortum implements ISortum {
   }
 
   /**
- * Syncs the ghost element's size with the target element's size.
- * @param target - The target element to match sizes with
- */
+   * Syncs the ghost element's size with the target element's size.
+   * @param target - The target element to match sizes with
+   */
   private syncGhostSize(target: HTMLElement): void {
     if (!this.ghost || !this.syncSizeOnOverlap || !this.grabbed) return;
 
@@ -862,7 +862,7 @@ export default class Sortum implements ISortum {
 
       css(this.ghost, {
         width: `${width}px`,
-        height: `${height}px`
+        height: `${height}px`,
       });
 
       return;

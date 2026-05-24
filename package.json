@@ -28,7 +28,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "lint": "eslint . --fix",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "dom",
@@ -54,6 +55,6 @@
     "node": ">=22"
   },
   "dependencies": {
-    "snappykit": "^1.0.6"
+    "snappykit": "^1.0.9"
   }
 }

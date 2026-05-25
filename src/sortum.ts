@@ -1,18 +1,4 @@
-import {
-  addClass,
-  removeClass,
-  css,
-  remove,
-  attr,
-  on,
-  off,
-  append,
-  removeAttr,
-  queryList,
-  closest,
-  rect,
-  data,
-} from 'snappykit';
+import { addClass, removeClass, css, remove, attr, on, off, append, removeAttr, closest, rect, data } from 'snappykit';
 import {
   Sortum as ISortum,
   SortumDragEvent,
@@ -264,20 +250,20 @@ export default class Sortum implements ISortum {
     const keyframes =
       el === this.grabbed
         ? [
-          {
-            position: 'relative',
-            zIndex: 1,
-            translate: `${x - left}px ${y - top}px`,
-            opacity: 0.9,
-            scale: `${this.scale}`,
-          },
-          { position: 'relative', zIndex: 1, translate: '0', opacity: 1, scale: '1' },
-        ]
+            {
+              position: 'relative',
+              zIndex: 1,
+              translate: `${x - left}px ${y - top}px`,
+              opacity: 0.9,
+              scale: `${this.scale}`,
+            },
+            { position: 'relative', zIndex: 1, translate: '0', opacity: 1, scale: '1' },
+          ]
         : [
-          { position: 'relative', zIndex: 0, scale: '1.0', translate: `${x - left}px ${y - top}px` },
-          { position: 'relative', zIndex: 0, scale: `${2 - this.scale}` },
-          { position: 'relative', zIndex: 0, scale: '1.0', translate: '0' },
-        ];
+            { position: 'relative', zIndex: 0, scale: '1.0', translate: `${x - left}px ${y - top}px` },
+            { position: 'relative', zIndex: 0, scale: `${2 - this.scale}` },
+            { position: 'relative', zIndex: 0, scale: '1.0', translate: '0' },
+          ];
 
     const anim = el.animate(keyframes as Keyframe[], {
       duration: this.duration,
@@ -534,18 +520,13 @@ export default class Sortum implements ISortum {
    * @param targetElement - The element under the pointer at drop time
    * @returns True if the drop was successfully performed
    */
-  private performDrop(
-    grabElement: HTMLElement,
-    targetElement: HTMLElement,
-    clientX: number,
-    clientY: number,
-  ): boolean {
+  private performDrop(grabElement: HTMLElement, targetElement: HTMLElement, clientX: number, clientY: number): boolean {
     const source = grabElement.closest(this.containerSelector) as HTMLElement;
     const sourceChildren = this.getChildren(source);
 
     this.fromIndex = sourceChildren.indexOf(grabElement);
 
-    const sourceSiblings = sourceChildren.filter(el => el !== grabElement);
+    const sourceSiblings = sourceChildren.filter((el) => el !== grabElement);
 
     this.dropped = targetElement?.closest(`${this.fullItemsSelector}, ${this.containerSelector}`) as HTMLElement;
 
@@ -565,12 +546,13 @@ export default class Sortum implements ISortum {
       const style = getComputedStyle(this.destination!);
       const columns = (style.gridTemplateColumns || '').split(' ').filter(Boolean).length;
       const isRealGrid = style.display.includes('grid') && columns > 1;
-      const isFlexRow = style.display.includes('flex') && (style.flexDirection === 'row' || style.flexDirection === 'row-reverse');
+      const isFlexRow =
+        style.display.includes('flex') && (style.flexDirection === 'row' || style.flexDirection === 'row-reverse');
       const isWrappedFlex = isFlexRow && style.flexWrap !== 'nowrap';
       const isGridLike = isRealGrid || isWrappedFlex;
 
       if (isGridLike) {
-        const destinationChildren = destChildren.filter(el => el !== grabElement);
+        const destinationChildren = destChildren.filter((el) => el !== grabElement);
         const rows = new Map<number, HTMLElement[]>();
 
         // group by visual rows
@@ -595,17 +577,16 @@ export default class Sortum implements ISortum {
           rows.get(rowKey)!.push(child);
         }
 
-        const sortedRows = [...rows.entries()]
-          .sort((a, b) => a[0] - b[0]);
+        const sortedRows = [...rows.entries()].sort((a, b) => a[0] - b[0]);
 
         // pick closest row (stable even when fast moving)
         let targetRow: HTMLElement[] | null = null;
         let closestDistance = Infinity;
 
         for (const [, row] of sortedRows) {
-          const rowRects = row.map(el => rect(el));
-          const rowTop = Math.min(...rowRects.map(r => r.top));
-          const rowBottom = Math.max(...rowRects.map(r => r.bottom));
+          const rowRects = row.map((el) => rect(el));
+          const rowTop = Math.min(...rowRects.map((r) => r.top));
+          const rowBottom = Math.max(...rowRects.map((r) => r.bottom));
           const rowCenter = rowTop + (rowBottom - rowTop) / 2;
           const distance = Math.abs(clientY - rowCenter);
 
@@ -675,40 +656,34 @@ export default class Sortum implements ISortum {
     if (this.swap) {
       this.affected = this.dropped ? [this.dropped] : [];
     } else if (isSameContainer) {
-      const min = isOntoContainer
-        ? this.fromIndex
-        : Math.min(this.toIndex, this.fromIndex);
+      const min = isOntoContainer ? this.fromIndex : Math.min(this.toIndex, this.fromIndex);
 
-      const max = isOntoContainer
-        ? sourceSiblings.length
-        : Math.max(this.toIndex, this.fromIndex);
+      const max = isOntoContainer ? sourceSiblings.length : Math.max(this.toIndex, this.fromIndex);
 
       this.affected = sourceSiblings.slice(min, max);
     } else {
-      this.affected = [
-        ...sourceSiblings.slice(this.fromIndex),
-        ...destChildren.slice(this.toIndex),
-      ];
+      this.affected = [...sourceSiblings.slice(this.fromIndex), ...destChildren.slice(this.toIndex)];
     }
 
     const isValid = this.isValidPosition({ el: targetElement });
-    const canDrop = this.onDrop?.({
-      item: this.grabbed!,
-      source,
-      target: this.dropped,
-      destination: this.destination,
-      fromIndex: this.fromIndex,
-      toIndex: this.toIndex,
-      isValid,
-      isSameContainer,
-      event: this.currentEvent!,
-    }) ?? true;
+    const canDrop =
+      this.onDrop?.({
+        item: this.grabbed!,
+        source,
+        target: this.dropped,
+        destination: this.destination,
+        fromIndex: this.fromIndex,
+        toIndex: this.toIndex,
+        isValid,
+        isSameContainer,
+        event: this.currentEvent!,
+      }) ?? true;
 
     const notMoved = isSameContainer && this.fromIndex === this.toIndex;
     const shouldDrop = this.dropped && isValid && canDrop && !notMoved;
 
     if (shouldDrop) {
-      const itemsData = this.affected.map(el => {
+      const itemsData = this.affected.map((el) => {
         const { x, y } = rect(el);
         return { el, x, y };
       });
@@ -716,10 +691,7 @@ export default class Sortum implements ISortum {
       if (this.swap && !isOntoContainer) {
         const next = grabElement.nextSibling;
 
-        this.destination?.insertBefore(
-          grabElement,
-          this.dropped!.nextSibling,
-        );
+        this.destination?.insertBefore(grabElement, this.dropped!.nextSibling);
 
         source?.insertBefore(this.dropped!, next);
       } else {
@@ -732,15 +704,9 @@ export default class Sortum implements ISortum {
           );
         } else {
           if (this.toIndex > destChildren.indexOf(this.dropped!)) {
-            this.destination?.insertBefore(
-              grabElement,
-              this.dropped!.nextSibling,
-            );
+            this.destination?.insertBefore(grabElement, this.dropped!.nextSibling);
           } else {
-            this.destination?.insertBefore(
-              grabElement,
-              this.dropped,
-            );
+            this.destination?.insertBefore(grabElement, this.dropped);
           }
         }
       }
@@ -1081,7 +1047,7 @@ export default class Sortum implements ISortum {
 
       const dataGroup = data(container, 'sortumGroup');
 
-      if ((this.group !== '' && dataGroup !== this.group)) return;
+      if (this.group !== '' && dataGroup !== this.group) return;
     } else {
       this.ghostResizeTimer = window.setTimeout(applyOriginal, 80);
       return;

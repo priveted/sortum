@@ -70,6 +70,30 @@ export default class Sortum implements ISortum {
   /** The most recent event, stored for use in callbacks */
   private currentEvent: Event | null = null;
 
+  /** Pointer offset */
+  private pointerOffsetRatio = {
+    x: 0,
+    y: 0,
+  };
+
+  /** The current cursor position */
+  private currentPointer = {
+    clientX: 0,
+    clientY: 0,
+  };
+
+  /* *Size change delay timer */
+  private ghostResizeTimer?: number;
+
+  /** Saving the original size of the element before dragging */
+  private originalSize = {
+    width: 0,
+    height: 0,
+  };
+
+  /** Saving the current element before starting dragging */
+  private currentContainer: HTMLElement | null = null;
+
   // Options
   private group!: string;
   private swap!: boolean;
@@ -153,23 +177,31 @@ export default class Sortum implements ISortum {
    * The ghost is positioned absolutely and follows the pointer.
    */
   private createGhost(): void {
-    if (!this.grabbed) return;
+    if (!this.grabbed || !this.startPosition) return;
 
-    const { x, y, width, height } = rect(this.grabbed);
+    const { width, height } = rect(this.grabbed);
+
+    this.originalSize = {
+      width,
+      height,
+    };
+
     this.ghost = this.grabbed.cloneNode(true) as HTMLElement;
 
     css(this.ghost, {
       position: 'fixed',
-      left: `${x}px`,
-      top: `${y}px`,
-      width: `${width}px`,
-      height: `${height}px`,
+      left: 0,
+      top: 0,
+      width: width,
+      height: height,
       pointerEvents: 'none',
       zIndex: this.zIndex,
       opacity: this.opacity,
+      transition: 'width 0.2s ease-out, height 0.2s ease-out',
     });
 
     removeClass(this.ghost, [this.activeClass, this.targetClass]);
+
     addClass(this.ghost, this.ghostClass);
 
     this.ghost.animate([{ scale: `${this.scale}` }], {
@@ -179,6 +211,8 @@ export default class Sortum implements ISortum {
     });
 
     append(this.container, this.ghost);
+
+    this.updateGhostPosition(this.startPosition.clientX, this.startPosition.clientY);
   }
 
   /**
@@ -196,21 +230,19 @@ export default class Sortum implements ISortum {
    * @param clientY - Current pointer Y coordinate
    */
   private updateGhostPosition(clientX: number, clientY: number): void {
-    if (!this.ghost || !this.startPosition) return;
-    const dx = clientX - this.startPosition.clientX;
-    const dy = clientY - this.startPosition.clientY;
+    if (!this.ghost) return;
 
-    // Adjust position to account for size changes
-    if (this.syncSizeOnOverlap && this.grabbed) {
-      const originalRect = rect(this.grabbed);
-      const ghostRect = rect(this.ghost);
-      const widthDiff = (ghostRect.width - originalRect.width) / 2;
-      const heightDiff = (ghostRect.height - originalRect.height) / 2;
+    const ghostRect = rect(this.ghost);
+    const offsetX = ghostRect.width * this.pointerOffsetRatio.x;
+    const offsetY = ghostRect.height * this.pointerOffsetRatio.y;
+    const x = clientX - offsetX;
+    const y = clientY - offsetY;
 
-      this.ghost.style.translate = `${dx - widthDiff}px ${dy - heightDiff}px`;
-    } else {
-      this.ghost.style.translate = `${dx}px ${dy}px`;
-    }
+    css(this.ghost, {
+      left: x,
+      top: y,
+      translate: '0 0',
+    });
   }
 
   /**
@@ -244,6 +276,7 @@ export default class Sortum implements ISortum {
             { position: 'relative', zIndex: 0, scale: `${2 - this.scale}` },
             { position: 'relative', zIndex: 0, scale: '1.0', translate: '0' },
           ];
+
     const anim = el.animate(keyframes as Keyframe[], {
       duration: this.duration,
       easing: this.easing,
@@ -673,12 +706,24 @@ export default class Sortum implements ISortum {
 
     if (this.handleSelector) {
       const handle = target.closest(this.handleSelector);
+
       if (!handle || !item.contains(handle)) return;
     }
 
-    this.startPosition = { clientX: ev.clientX, clientY: ev.clientY };
+    this.startPosition = {
+      clientX: ev.clientX,
+      clientY: ev.clientY,
+    };
+
     this.grabbed = item;
     this.fromIndex = this.getChildren(this.container).indexOf(this.grabbed);
+
+    const r = rect(item);
+
+    this.pointerOffsetRatio = {
+      x: (ev.clientX - r.left) / r.width,
+      y: (ev.clientY - r.top) / r.height,
+    };
 
     if (
       this.onStart?.({
@@ -693,8 +738,13 @@ export default class Sortum implements ISortum {
     }
 
     ev.preventDefault();
+
     addClass(this.grabbed, this.activeClass);
-    css(this.grabbed, { cursor: 'move', userSelect: 'none' });
+
+    css(this.grabbed, {
+      cursor: 'move',
+      userSelect: 'none',
+    });
 
     if (ev.pointerType === 'mouse') {
       this.isScrolling = true;
@@ -715,22 +765,39 @@ export default class Sortum implements ISortum {
    */
   private onPointerMove(ev: PointerEvent): void {
     if (!this.grabbed || !this.isScrolling) return;
-    if (this.hasMoved && !this.grabbed.hasPointerCapture(ev.pointerId)) return;
+
+    this.currentPointer = {
+      clientX: ev.clientX,
+      clientY: ev.clientY,
+    };
+
+    if (this.hasMoved && !this.grabbed.hasPointerCapture(ev.pointerId)) {
+      return;
+    }
 
     if (!this.hasMoved && this.hasSignificantMove(this.startPosition!, ev, this.dragThreshold)) {
       this.hasMoved = true;
+
       this.grabbed.setPointerCapture(ev.pointerId);
+
       addClass(this.grabbed, this.draggingClass);
+
       this.createGhost();
     }
 
     const { clientX, clientY } = ev;
     const fromPoint = document.elementFromPoint(clientX, clientY);
-    const target = fromPoint?.closest(this.fullItemsSelector) as HTMLElement;
-    const isValid = this.isValidPosition({ clientX, clientY });
+    const item = fromPoint?.closest(this.fullItemsSelector) as HTMLElement | null;
+    const container = fromPoint?.closest(this.containerSelector) as HTMLElement | null;
+    const isValid = this.isValidPosition({
+      clientX,
+      clientY,
+    });
 
-    if (this.ghost && this.startPosition) {
-      this.ghost.style.translate = `${clientX - this.startPosition.clientX}px ${clientY - this.startPosition.clientY}px`;
+    // ghost position always
+    if (this.ghost) {
+      this.updateGhostPosition(clientX, clientY);
+
       if (isValid) {
         removeClass(this.ghost, this.invalidClass);
       } else {
@@ -738,28 +805,35 @@ export default class Sortum implements ISortum {
       }
     }
 
-    css(this.grabbed, { cursor: isValid ? 'grab' : 'not-allowed' });
+    css(this.grabbed, {
+      cursor: isValid ? 'grab' : 'not-allowed',
+    });
 
-    if (target !== this.target) {
+    const containerChanged = container !== this.currentContainer;
+
+    if (containerChanged) {
+      this.currentContainer = container;
+    }
+
+    if (containerChanged && !container) {
+      this.syncGhostSize(null);
+    }
+
+    if (item !== this.target) {
       if (this.target) {
         removeClass(this.target, this.targetClass);
-        // Reset ghost size when leaving a target
-        if (this.syncSizeOnOverlap && this.ghost && this.grabbed) {
-          const { width, height } = rect(this.grabbed);
-          css(this.ghost, { width: `${width}px`, height: `${height}px` });
-        }
       }
-      if (isValid && target && !target.matches(this.containerSelector)) {
-        this.target = target;
-        addClass(this.target, this.targetClass);
-        // Sync ghost size with new target
-        this.syncGhostSize(target);
-      } else {
-        this.target = null;
+
+      this.target = item;
+
+      if (isValid && item && !item.matches(this.containerSelector)) {
+        addClass(item, this.targetClass);
+        this.syncGhostSize(item);
       }
     }
 
     this.handleEdgeScroll(ev);
+
     this.onMove?.({
       item: this.grabbed,
       container: this.container,
@@ -778,8 +852,14 @@ export default class Sortum implements ISortum {
     if (!this.grabbed) return;
     this.stopAutoScroll();
     this.isScrolling = false;
-    css(this.grabbed, { userSelect: '', cursor: '' });
+
+    css(this.grabbed, {
+      userSelect: '',
+      cursor: '',
+    });
+
     removeClass(this.grabbed, [this.activeClass, this.draggingClass, this.touchClass]);
+
     if (this.target) removeClass(this.target, this.targetClass);
 
     const fromPoint = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement;
@@ -835,7 +915,38 @@ export default class Sortum implements ISortum {
       if (ev.cancelable) ev.preventDefault();
 
       if (this.hasMoved && this.ghost) {
-        this.updateGhostPosition(touch.clientX, touch.clientY);
+        const { clientX, clientY } = touch;
+        const fromPoint = document.elementFromPoint(clientX, clientY);
+        const target = fromPoint?.closest(this.fullItemsSelector) as HTMLElement;
+        const isValid = this.isValidPosition({ clientX, clientY });
+
+        this.updateGhostPosition(clientX, clientY);
+
+        if (this.ghost) {
+          if (isValid) {
+            removeClass(this.ghost, this.invalidClass);
+          } else {
+            addClass(this.ghost, this.invalidClass);
+          }
+        }
+
+        if (target !== this.target) {
+          if (this.target) {
+            removeClass(this.target, this.targetClass);
+            if (this.syncSizeOnOverlap && this.ghost && this.grabbed) {
+              const { width, height } = rect(this.grabbed);
+              css(this.ghost, { width: `${width}px`, height: `${height}px` });
+            }
+          }
+          if (isValid && target && !target.matches(this.containerSelector)) {
+            this.target = target;
+            addClass(this.target, this.targetClass);
+            this.syncGhostSize(target);
+          } else {
+            this.target = null;
+          }
+        }
+
         this.handleEdgeScroll(touch);
       }
       return;
@@ -852,28 +963,61 @@ export default class Sortum implements ISortum {
    * Syncs the ghost element's size with the target element's size.
    * @param target - The target element to match sizes with
    */
-  private syncGhostSize(target: HTMLElement): void {
-    if (!this.ghost || !this.syncSizeOnOverlap || !this.grabbed) return;
-
-    // Skip container targets
-    if (target.matches(this.containerSelector)) {
-      // Reset to original size
-      const { width, height } = rect(this.grabbed);
-
-      css(this.ghost, {
-        width: `${width}px`,
-        height: `${height}px`,
-      });
-
+  private syncGhostSize(target: HTMLElement | null): void {
+    if (!this.ghost || !this.syncSizeOnOverlap || !this.grabbed) {
       return;
     }
 
-    const targetRect = rect(target);
+    clearTimeout(this.ghostResizeTimer);
 
-    css(this.ghost, {
-      width: `${targetRect.width}px`,
-      height: `${targetRect.height}px`,
-    });
+    const applyOriginal = () => {
+      if (!this.ghost) return;
+
+      css(this.ghost, {
+        width: `${this.originalSize.width}px`,
+        height: `${this.originalSize.height}px`,
+      });
+
+      requestAnimationFrame(() => {
+        this.updateGhostPosition(this.currentPointer.clientX, this.currentPointer.clientY);
+      });
+    };
+
+    if (!target) {
+      this.ghostResizeTimer = window.setTimeout(applyOriginal, 80);
+      return;
+    }
+
+    this.ghostResizeTimer = window.setTimeout(() => {
+      if (!this.ghost) return;
+
+      if (target.matches(this.containerSelector)) {
+        applyOriginal();
+        return;
+      }
+
+      const r = rect(target);
+
+      css(this.ghost, {
+        width: r.width,
+        height: r.height,
+      });
+
+      const start = performance.now();
+      const duration = 180;
+
+      const tick = () => {
+        if (!this.ghost) return;
+
+        this.updateGhostPosition(this.currentPointer.clientX, this.currentPointer.clientY);
+
+        if (performance.now() - start < duration) {
+          requestAnimationFrame(tick);
+        }
+      };
+
+      requestAnimationFrame(tick);
+    }, 120);
   }
 
   /** @see ISortum.sort */
@@ -891,6 +1035,15 @@ export default class Sortum implements ISortum {
 
   /** @see ISortum.reset */
   reset(): void {
+    clearTimeout(this.ghostResizeTimer);
+
+    this.ghostResizeTimer = undefined;
+
+    this.currentPointer = {
+      clientX: 0,
+      clientY: 0,
+    };
+
     this.ghost = null;
     this.grabbed = null;
     this.target = null;
@@ -925,7 +1078,7 @@ export default class Sortum implements ISortum {
         easing: 'cubic-bezier(0.6, 0, 0.6, 1)',
         scale: 1.0,
         opacity: 0.8,
-        pressDuration: 15,
+        pressDuration: 240,
         dropOnContainer: true,
         dragThreshold: 0,
         scrollThreshold: 8,

@@ -100,6 +100,8 @@ export interface SortumOptions {
   noDragSelector?: string;
   /** CSS class added to the ghost element */
   ghostClass?: string;
+  /** Determines the DOM element to which the drag ghost (visual clone) will be appended during the drag operation. */
+  ghostAppendTo?: HTMLElement;
   /** CSS class added to the dragged item when active */
   activeClass?: string;
   /** CSS class added on touch devices */

@@ -116,6 +116,7 @@ export default class Sortum implements ISortum {
   private noDropSelector!: string;
   private noDragSelector!: string;
   private ghostClass!: string;
+  private ghostAppendTo!: HTMLElement;
   private activeClass!: string;
   private touchClass!: string;
   private draggingClass!: string;
@@ -210,7 +211,7 @@ export default class Sortum implements ISortum {
       fill: 'forwards',
     });
 
-    append(this.container, this.ghost);
+    append(this.ghostAppendTo || document.body, this.ghost);
 
     this.updateGhostPosition(this.startPosition.clientX, this.startPosition.clientY);
   }
@@ -1085,6 +1086,7 @@ export default class Sortum implements ISortum {
         edgeThreshold: 50,
         scrollSpeed: 10,
         zIndex: 2147483647,
+        ghostAppendTo: document.body,
         containerSelector: '.sortum',
         itemsSelector: '*',
         ignoredSelector: '.sortum-ignore',

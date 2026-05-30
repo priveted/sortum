@@ -116,6 +116,8 @@ export interface SortumOptions {
   dropAnimationClass?: string;
   /** CSS class added to the ghost when over an invalid position */
   invalidClass?: string;
+  /** Maximum number of items allowed in a container. 0 means unlimited. Default: 0 */
+  maxItems?: number;
   /**
    * Called when a drag is about to start.
    * @param data - The drag event data

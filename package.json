@@ -55,6 +55,6 @@
     "node": ">=22"
   },
   "dependencies": {
-    "snappykit": "^1.0.10"
+    "snappykit": "^1.0.11"
   }
 }

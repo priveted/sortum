@@ -13,7 +13,8 @@ export * from '@/types';
 export default class Sortum implements ISortum {
   /** The container element managed by this instance */
   private container: HTMLElement;
-
+  /** Stores Sortum instances associated with container elements for cross-container lookups */
+  private static readonly instances = new WeakMap<HTMLElement, Sortum>();
   /** Combined CSS selector for finding sortable items */
   private fullItemsSelector: string = '';
   /** The ghost element that follows the pointer during drag */
@@ -85,6 +86,7 @@ export default class Sortum implements ISortum {
   private group!: string;
   private swap!: boolean;
   private syncSizeOnOverlap!: boolean;
+  private maxItems!: number;
   private duration!: number;
   private easing!: string;
   private scale!: number;
@@ -250,20 +252,20 @@ export default class Sortum implements ISortum {
     const keyframes =
       el === this.grabbed
         ? [
-            {
-              position: 'relative',
-              zIndex: 1,
-              translate: `${x - left}px ${y - top}px`,
-              opacity: 0.9,
-              scale: `${this.scale}`,
-            },
-            { position: 'relative', zIndex: 1, translate: '0', opacity: 1, scale: '1' },
-          ]
+          {
+            position: 'relative',
+            zIndex: 1,
+            translate: `${x - left}px ${y - top}px`,
+            opacity: 0.9,
+            scale: `${this.scale}`,
+          },
+          { position: 'relative', zIndex: 1, translate: '0', opacity: 1, scale: '1' },
+        ]
         : [
-            { position: 'relative', zIndex: 0, scale: '1.0', translate: `${x - left}px ${y - top}px` },
-            { position: 'relative', zIndex: 0, scale: `${2 - this.scale}` },
-            { position: 'relative', zIndex: 0, scale: '1.0', translate: '0' },
-          ];
+          { position: 'relative', zIndex: 0, scale: '1.0', translate: `${x - left}px ${y - top}px` },
+          { position: 'relative', zIndex: 0, scale: `${2 - this.scale}` },
+          { position: 'relative', zIndex: 0, scale: '1.0', translate: '0' },
+        ];
 
     const anim = el.animate(keyframes as Keyframe[], {
       duration: this.duration,
@@ -348,19 +350,43 @@ export default class Sortum implements ISortum {
     clientY?: number;
     el?: HTMLElement;
   } = {}): boolean {
+    const checkMaxItems = (dropContainer: HTMLElement, isSameContainer: boolean): boolean => {
+      if (isSameContainer) {
+        return true;
+      }
+
+      const instance = Sortum.instances.get(dropContainer);
+
+      if (!instance || instance.maxItems <= 0) {
+        return true;
+      }
+
+      return instance.getChildren(dropContainer).length < instance.maxItems;
+    };
+
     if (el) {
-      if (el.closest(`${this.ignoredSelector}`)) return false;
+      if (el.closest(`${this.ignoredSelector}`)) {
+        return false;
+      }
 
       const target = el.closest(`${this.fullItemsSelector}, ${this.containerSelector}`) as HTMLElement;
       const dropContainer = el.closest(this.containerSelector) as HTMLElement;
 
-      if (!target || !dropContainer) return false;
+      if (!target || !dropContainer) {
+        return false;
+      }
 
-      const isSelf = target && closest(target, this.grabbed) === this.grabbed;
+      const isSelf = closest(target, this.grabbed) === this.grabbed;
       const isSameContainer = dropContainer === this.container;
       const isContainerTarget = target === dropContainer;
 
-      if (!this.dropOnContainer && isContainerTarget) return false;
+      if (!this.dropOnContainer && isContainerTarget) {
+        return false;
+      }
+
+      if (!checkMaxItems(dropContainer, isSameContainer)) {
+        return false;
+      }
 
       const group = dropContainer.dataset.sortumGroup;
       const isValidGroup = !isSameContainer && !!(group && this.group === group);
@@ -370,14 +396,25 @@ export default class Sortum implements ISortum {
 
     const { target, dropContainer } = this.findDropTarget(clientX, clientY);
 
-    if (!target || !dropContainer) return false;
-    if (target.closest(`${this.ignoredSelector}`)) return false;
+    if (!target || !dropContainer) {
+      return false;
+    }
+
+    if (target.closest(`${this.ignoredSelector}`)) {
+      return false;
+    }
 
     const isSelf = closest(target, this.grabbed) === this.grabbed;
     const isSameContainer = dropContainer === this.container;
     const isContainerTarget = target === dropContainer;
 
-    if (!this.dropOnContainer && isContainerTarget) return false;
+    if (!this.dropOnContainer && isContainerTarget) {
+      return false;
+    }
+
+    if (!checkMaxItems(dropContainer, isSameContainer)) {
+      return false;
+    }
 
     const group = dropContainer.dataset.sortumGroup;
     const isValidGroup = !isSameContainer && !!(group && this.group === group);
@@ -1150,6 +1187,7 @@ export default class Sortum implements ISortum {
         edgeThreshold: 50,
         scrollSpeed: 10,
         zIndex: 2147483647,
+        maxItems: 0,
         ghostAppendTo: document.body,
         containerSelector: '.sortum',
         itemsSelector: '*',
@@ -1171,7 +1209,10 @@ export default class Sortum implements ISortum {
 
     this.reset();
 
+    Sortum.instances.set(this.container, this);
+
     const containerClass = this.containerSelector.replace(/^\./, '');
+
     if (this.containerSelector.startsWith('.') && !this.container.matches(this.containerSelector)) {
       addClass(this.container, containerClass);
       this.shouldRemoveContainerClass = true;
@@ -1195,13 +1236,22 @@ export default class Sortum implements ISortum {
   /** @see ISortum.destroy */
   destroy(): void {
     this.removeGhost();
+
+    Sortum.instances.delete(this.container);
+
     off(this.container, 'touchstart.sortum');
     off(this.container, 'touchmove.sortum');
     off(this.container, 'pointerdown.sortum');
     off(this.container, 'pointermove.sortum');
     off(this.container, 'pointerup.sortum');
     off(this.container, 'pointercancel.sortum');
-    if (this.group) removeAttr(this.container, 'data-sortum-group');
-    if (this.shouldRemoveContainerClass) removeClass(this.container, this.containerSelector.replace(/^\./, ''));
+
+    if (this.group) {
+      removeAttr(this.container, 'data-sortum-group');
+    }
+
+    if (this.shouldRemoveContainerClass) {
+      removeClass(this.container, this.containerSelector.replace(/^\./, ''));
+    }
   }
 }
